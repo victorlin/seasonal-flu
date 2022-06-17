@@ -197,26 +197,25 @@ def parse_metadata(segments, metadata_files, date_format = "%Y-%m-%d"):
         tmp_meta = read_metadata(fname)
         numerical_dates = get_numerical_dates(tmp_meta, fmt=date_format)
 
+        for strain in tmp_meta.index:
+            if numerical_dates[strain] is None:
+                # Remove strain that does not have valid date
+                tmp_meta.drop(strain, inplace=True)
+                continue
+            tmp_meta.at[strain, 'num_date'] = np.mean(numerical_dates[strain])
+            tmp_meta.at[strain, 'year'] = int(tmp_meta.at[strain, 'num_date'])
+            tmp_meta.at[strain, 'month'] = int((tmp_meta.at[strain, 'num_date']%1)*12)
+            if 'age' in tmp_meta.columns:
+                age_str = tmp_meta.loc[strain, 'age']
+                if age_str[-1]=='y':
+                    tmp_meta.at[strain, 'age'] = int(age_str[:-1])
+                elif tmp_meta.at[strain, 'age']=='m':
+                    tmp_meta.at[strain, 'age'] = float(age_str[:-1])/12.0
+                else:
+                    tmp_meta.at[strain, 'age'] = 'unknown'
+
         tmp_meta.insert(0, "strain", tmp_meta.index.values)
         tmp_meta = tmp_meta.to_dict(orient="index")
-
-        for x in list(tmp_meta.keys()):
-            if numerical_dates[x] is None:
-                # Remove strain that does not have valid date
-                del tmp_meta[x]
-                continue
-            tmp_meta[x]['num_date'] = np.mean(numerical_dates[x])
-            tmp_meta[x]['year'] = int(tmp_meta[x]['num_date'])
-            tmp_meta[x]['month'] = int((tmp_meta[x]['num_date']%1)*12)
-            if 'age' in tmp_meta[x]:
-                age_str = tmp_meta[x]['age']
-                if age_str[-1]=='y':
-                    tmp_meta[x]['age'] = int(age_str[:-1])
-                elif tmp_meta[x]['age']=='m':
-                    tmp_meta[x]['age'] = float(age_str[:-1])/12.0
-                else:
-                    tmp_meta[x]['age'] = 'unknown'
-
         metadata[segment] = tmp_meta
     return metadata
 
