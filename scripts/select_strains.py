@@ -173,6 +173,17 @@ def flu_subsampling(metadata, viruses_per_month, time_interval, titer_fnames=Non
     return selected_strains
 
 
+def in_covid_pandemic_interval(min_date):
+    """
+    Check if the provided *min_date* lands in the time interval of the
+    COVID-19 pandemic when there was very little flu data.
+    """
+    start = datetime.strptime('2020-04-01', '%Y-%m-%d').date()
+    end = datetime.strptime('2022-02-01', '%Y-%m-%d').date()
+
+    return start <= min_date <= end
+
+
 def determine_time_interval(time_interval, resolution):
     # determine date range to include strains from
     if time_interval: # explicitly specified
@@ -188,6 +199,13 @@ def determine_time_interval(time_interval, resolution):
         else:
             years_back = 3
         datetime_interval = [datetime.today().date(), (datetime.today()  - timedelta(days=365.25 * years_back)).date()]
+
+        # If the min date lands in the COVID-19 pandemic time interval,
+        # then hardcode the min date to 2020-01-01 so that we have enough
+        # data to build a properly rooted tree
+        if in_covid_pandemic_interval(datetime_interval[1]):
+            datetime_interval[1] = datetime.strptime('2020-01-01', '%Y-%m-%d').date()
+
     return datetime_interval
 
 def parse_metadata(segments, metadata_files, date_format = "%Y-%m-%d"):
